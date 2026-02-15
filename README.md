@@ -2,6 +2,8 @@
 
 This project is a monitoring and alerting setup for parking devices. You can push telemetry and occupancy events into it, look at dashboards and device status, handle alerts, and pull usage out as CSV.
 
+**Stack:** Backend Django 6 + Django REST Framework, frontend Next.js 16 (React). Database: SQLite (default Django `db.sqlite3` in `backend`).
+
 ---
 
 ## How to run
@@ -48,9 +50,15 @@ Log in at http://127.0.0.1:8000/admin/ with **admin** / **12345** (email: admin@
 - Alerts: list, filter by severity, acknowledge.
 - Reports: date range + optional facility/zone, download CSV.
 
-**Not included:** Excel/PDF export, auth, scheduled offline-alert check, tests.
+---
 
-**Occupancy per zone:** Not implemented. Occupancy is tracked per device (via `ParkingLog`); zones exist and devices belong to them, but there is no API or UI that reports “X of Y slots occupied” per zone. The dashboard has global `current_occupancy_count` and `zone_breakdown` only for zones with targets (where “actual” is event count, not occupancy).
+## Incomplete features
+
+- Excel and PDF export (only CSV is implemented).
+- Authentication and user roles.
+- Automated scheduling for `check_offline_alerts` (no cron/celery setup in repo).
+- Unit or integration tests.
+- Occupancy per zone: no API or UI for “X of Y slots occupied” per zone; dashboard has global occupancy and zone breakdown only where targets exist (actual = event count, not occupancy).
 
 ---
 
@@ -58,21 +66,21 @@ Log in at http://127.0.0.1:8000/admin/ with **admin** / **12345** (email: admin@
 
 Base URL: `http://127.0.0.1:8000/api/`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health/` | Health check |
-| POST | `/telemetry/` | Single telemetry ingestion |
-| POST | `/telemetry/bulk/` | Bulk telemetry ingestion |
-| POST | `/parking-log/` | Occupancy event (device became occupied/free) |
-| GET | `/alerts/` | List alerts (query: `severity`, `acknowledged`) |
-| PATCH | `/alerts/<id>/acknowledge/` | Acknowledge an alert |
-| GET | `/dashboard/summary/` | Dashboard summary for a date (query: `date`) |
-| GET | `/devices/status/` | Device list with status (query: `facility`, `zone`) |
-| GET | `/targets/` | List targets (query: `zone_id`, `date_from`, `date_to`) |
-| POST | `/targets/` | Create target |
-| PATCH | `/targets/<id>/` | Update target |
-| GET | `/report-csv/` | Usage CSV (query: `date_from`, `date_to`, `facility`, `zone`) |
-| GET | `/reports/usage/` | Same as `/report-csv/` |
+| Method | Endpoint                    | Description                                                   |
+| ------ | --------------------------- | ------------------------------------------------------------- |
+| GET    | `/health/`                  | Health check                                                  |
+| POST   | `/telemetry/`               | Single telemetry ingestion                                    |
+| POST   | `/telemetry/bulk/`          | Bulk telemetry ingestion                                      |
+| POST   | `/parking-log/`             | Occupancy event (device became occupied/free)                 |
+| GET    | `/alerts/`                  | List alerts (query: `severity`, `acknowledged`)               |
+| PATCH  | `/alerts/<id>/acknowledge/` | Acknowledge an alert                                          |
+| GET    | `/dashboard/summary/`       | Dashboard summary for a date (query: `date`)                  |
+| GET    | `/devices/status/`          | Device list with status (query: `facility`, `zone`)           |
+| GET    | `/targets/`                 | List targets (query: `zone_id`, `date_from`, `date_to`)       |
+| POST   | `/targets/`                 | Create target                                                 |
+| PATCH  | `/targets/<id>/`            | Update target                                                 |
+| GET    | `/report-csv/`              | Usage CSV (query: `date_from`, `date_to`, `facility`, `zone`) |
+| GET    | `/reports/usage/`           | Same as `/report-csv/`                                        |
 
 ---
 
