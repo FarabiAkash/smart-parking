@@ -1,72 +1,96 @@
 # Smart Parking — Monitoring & Alerting
 
-A small platform to monitor parking devices and occupancy: ingest telemetry and occupancy events, see dashboards and device status, manage alerts, and export usage reports. No payments or bookings—just visibility and alerting.
+This project is a monitoring and alerting setup for parking devices. You can push telemetry and occupancy events into it, look at dashboards and device status, handle alerts, and pull usage out as CSV.
 
 ---
 
 ## How to run
 
-**Windows:** Clone the repo, then double-click `start.bat`. It sets up the backend venv, runs migrations, and starts Django and Next.js in separate windows.
+On Windows, clone the repo and double-click `start.bat`. It creates the backend venv if needed, runs migrations, and opens two windows: one for Django, one for Next.js.
 
-- **Backend:** http://127.0.0.1:8000  
-- **Frontend:** http://localhost:3000  
+Backend is at http://127.0.0.1:8000, frontend at http://localhost:3000.
 
-**Manual start:** From the project root, run the backend with `cd backend`, activate the venv (`venv\Scripts\activate`), then `python manage.py runserver 8000`. In another terminal, `cd frontend` and `npm run dev` for the UI.
+If you prefer to start things yourself: in one terminal, `cd backend`, run `venv\Scripts\activate`, then `python manage.py runserver 8000`. In another, `cd frontend` and `npm run dev`.
 
 ---
 
 ## Admin panel and adding data
 
-**Login:** http://127.0.0.1:8000/admin/  
-Use: **admin** / **12345** (email: admin@gmail.com).
+Log in at http://127.0.0.1:8000/admin/ with **admin** / **12345** (email: admin@gmail.com).
 
-Data is hierarchical: **Facility → Zone → Device**. Create them in that order.
-
-1. **Parking facilities** — Add a facility (e.g. name “Main Lot”, code “MAIN”).
-2. **Parking zones** — Add zones under a facility (e.g. “Level B1”, code “B1”).
-3. **Devices** — Add devices under a zone. The **code** is what the API uses (e.g. `PARK-B1-S001`). Keep it unique.
-4. **Targets** (optional) — Set a daily target per zone or per device (date + target value) so the dashboard can show efficiency.
-
-After that, data comes in via the APIs: telemetry (`POST /api/telemetry/` or bulk), and parking logs (`POST /api/parking-log/`). You can also run `python manage.py seed_test_data` from the `backend` folder (with venv active) to create a sample facility, zone, three devices, and some telemetry/logs for today.
-
-**Offline alerts** are not created automatically by the app. Run from time to time (e.g. every 1–2 minutes via Task Scheduler or a cron):  
-`python manage.py check_offline_alerts`  
-(from `backend` with venv activated). That creates “device offline” alerts for devices with no telemetry in the last 2 minutes.
+- **Hierarchy:** facility → zone → device. Create in that order.
+- **Facilities:** e.g. name “Main Lot”, code “MAIN”.
+- **Zones:** under a facility, e.g. “Level B1”, code “B1”.
+- **Devices:** under a zone; **code** is what the API uses (e.g. `PARK-B1-S001`). Keep it unique.
+- **Targets (optional):** daily target per zone or device (date + value) for dashboard efficiency.
+- **Data:** once structure exists, telemetry and parking logs come in via the APIs.
+- **Quick data:** run `python manage.py seed_test_data` from `backend` (venv active) to create a sample facility, zone, three devices, and today’s telemetry/logs.
+- **Offline alerts:** not automatic. Run `python manage.py check_offline_alerts` periodically (e.g. every 1–2 min via Task Scheduler/cron) from `backend` with venv activated.
 
 ---
 
-## What’s implemented
+## What’s in the app
 
-**Backend (Django + DRF)**  
-- **Models:** Facility, Zone, Device, Telemetry, ParkingLog, Alert, Target, DeviceHealthScore.  
-- **Ingestion:** Single and bulk telemetry (`/api/telemetry/`, `/api/telemetry/bulk/`), parking-log (`/api/parking-log/`). Device must exist; timestamps validated; duplicate (device + timestamp) rejected for telemetry.  
-- **Dashboard:** `GET /api/dashboard/summary/?date=YYYY-MM-DD` — total events, current occupancy, active devices, alerts count, hourly usage, target vs actual and efficiency.  
-- **Device status:** `GET /api/devices/status/` (optional filters: facility, zone) — last telemetry/log time, status (OK / Warning / Critical), health score (0–100).  
-- **Alerts:** List with filters (`/api/alerts/?active=true&severity=...`), acknowledge via `PATCH /api/alerts/<id>/acknowledge/`. Alerts are stored and deduplicated (one open alert per device per type). Types: device offline, high power, invalid data; severities INFO, WARNING, CRITICAL.  
-- **Targets:** CRUD for daily targets by zone or device (`/api/targets/`).  
-- **Reports:** CSV export at `/report-csv/?date_from=...&date_to=...&format=csv` (and optional facility/zone).  
+**Backend (Django + DRF)**
 
-**Frontend (Next.js)**  
-- **Dashboard** — Summary cards for the chosen date, hourly events chart, zone/device target vs actual table, device “heartbeat” (last seen).  
-- **Live** — Device list with status and last seen; refreshes every 10 seconds; search by device/zone/facility.  
-- **Alerts** — List active alerts, filter by severity, acknowledge.  
-- **Reports** — Pick date range (and optionally facility/zone), download CSV.  
+- Models: facility, zone, device, telemetry, parking log, alert, target, device health score.
+- POST telemetry (single or bulk) and parking logs; device must exist, timestamps validated; duplicate device+timestamp rejected.
+- Dashboard summary by date: events, occupancy, active devices, alerts, hourly breakdown, efficiency (if targets set).
+- Device status: last-seen, status (OK / Warning / Critical), health score 0–100.
+- Alerts: list (with filters), acknowledge; one open alert per device per type (offline, high power, invalid data).
+- Targets: CRUD by zone or device.
+- Reports: CSV at `/report-csv/` (date range, optional facility/zone).
 
-Excel/PDF export, auth, and automated offline-check scheduling are not implemented. Tests are not included.
+**Frontend (Next.js)**
+
+- Dashboard: summary cards, date picker, hourly chart, target vs actual, device heartbeat table.
+- Live: device list, 10s refresh, search.
+- Alerts: list, filter by severity, acknowledge.
+- Reports: date range + optional facility/zone, download CSV.
+
+**Not included:** Excel/PDF export, auth, scheduled offline-alert check, tests.
+
+**Occupancy per zone:** Not implemented. Occupancy is tracked per device (via `ParkingLog`); zones exist and devices belong to them, but there is no API or UI that reports “X of Y slots occupied” per zone. The dashboard has global `current_occupancy_count` and `zone_breakdown` only for zones with targets (where “actual” is event count, not occupancy).
+
+---
+
+## API Endpoints
+
+Base URL: `http://127.0.0.1:8000/api/`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health/` | Health check |
+| POST | `/telemetry/` | Single telemetry ingestion |
+| POST | `/telemetry/bulk/` | Bulk telemetry ingestion |
+| POST | `/parking-log/` | Occupancy event (device became occupied/free) |
+| GET | `/alerts/` | List alerts (query: `severity`, `acknowledged`) |
+| PATCH | `/alerts/<id>/acknowledge/` | Acknowledge an alert |
+| GET | `/dashboard/summary/` | Dashboard summary for a date (query: `date`) |
+| GET | `/devices/status/` | Device list with status (query: `facility`, `zone`) |
+| GET | `/targets/` | List targets (query: `zone_id`, `date_from`, `date_to`) |
+| POST | `/targets/` | Create target |
+| PATCH | `/targets/<id>/` | Update target |
+| GET | `/report-csv/` | Usage CSV (query: `date_from`, `date_to`, `facility`, `zone`) |
+| GET | `/reports/usage/` | Same as `/report-csv/` |
 
 ---
 
 ## Design details (for reference)
 
-- **Telemetry:** Timestamp cannot be in the future (1 min tolerance). Duplicate (device_code, timestamp) returns 409. Bulk endpoint does partial success: valid rows inserted, errors reported per index.  
-- **Offline alert:** No telemetry for 2 minutes; one open “offline” alert per device.  
-- **High power:** voltage × current > 2000 W → CRITICAL.  
-- **Invalid data:** current > 100 A or voltage > 500 V → WARNING.  
-- **Health score (0–100):** Start at 100; subtract 10 per open alert and 30 if last telemetry is older than 5 minutes (or missing).  
-- **Efficiency:** For each target on that date, actual = count of parking log events; efficiency = min(100, actual / target × 100).
+- **Telemetry:** No future timestamps (1 min tolerance). Duplicate device+timestamp → 409. Bulk: partial success, errors by index.
+- **Offline alert:** No telemetry for 2 min; one open offline alert per device.
+- **High power:** voltage×current > 2000 W → CRITICAL.
+- **Invalid data:** current > 100 A or voltage > 500 V → WARNING.
+- **Health score (0–100):** Start 100; −10 per open alert; −30 if last telemetry > 5 min or missing.
+- **Efficiency:** min(100, actual events / target × 100) per target.
 
 ---
 
-## If you had more time
+## If I had more time
 
-I’d add tests (ingestion, dashboard, alert dedup), run `check_offline_alerts` on a schedule, add simple auth, and optionally swap the live view to WebSockets and add more charts (e.g. occupancy trend). For scale (e.g. 5,000 devices every 10 seconds), I’d move ingestion to a queue (e.g. Celery + Redis), use PostgreSQL (and possibly TimescaleDB or partitioning), cache dashboard aggregates, and run multiple API workers behind a load balancer with rate limiting.
+- Add tests for ingestion APIs, dashboard summary, and alert dedup.
+- Run `check_offline_alerts` on a schedule (e.g. Celery beat or system cron).
+- Add simple auth.
+- Switch the live view to WebSockets and add more charts (e.g. occupancy over time).
+- **At scale (e.g. 5,000 devices every 10s):** ingestion behind a queue (Celery + Redis), PostgreSQL with TimescaleDB or partitioning for time-series, cache dashboard aggregates, multiple API workers behind a load balancer with rate limiting.
