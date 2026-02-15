@@ -36,6 +36,19 @@ if errorlevel 1 (
 echo   npm: OK
 echo.
 
+REM ---- Free ports and clear caches ----
+echo [Setup] Freeing ports 8000 and 3000...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":8000" ^| findstr "LISTENING"') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":3000" ^| findstr "LISTENING"') do taskkill /F /PID %%a 2>nul
+echo   Ports cleared.
+
+echo [Setup] Clearing caches...
+if exist frontend\.next rd /s /q frontend\.next
+if exist frontend\node_modules\.cache rd /s /q frontend\node_modules\.cache
+for /d /r backend %%d in (__pycache__) do @if exist "%%d" rd /s /q "%%d" 2>nul
+echo   Caches cleared.
+echo.
+
 REM ---- Backend setup ----
 echo [1/2] Setting up Django backend...
 cd backend

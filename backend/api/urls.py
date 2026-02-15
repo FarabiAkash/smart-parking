@@ -12,5 +12,8 @@ urlpatterns = [
     path("devices/status/", views.device_status_list),
     path("targets/", views.target_list),
     path("targets/<int:pk>/", views.target_update),
+    path("report-csv/", views.reports_usage),
+    path("report-csv", views.reports_usage),
     path("reports/usage/", views.reports_usage),
+    path("reports/usage", views.reports_usage),
 ]

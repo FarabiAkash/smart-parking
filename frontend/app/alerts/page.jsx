@@ -2,6 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { fetchJson, apiUrl } from "../lib/api";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState([]);
@@ -36,85 +54,94 @@ export default function AlertsPage() {
     }
   };
 
+  const severityOptions = [
+    { value: "", label: "All" },
+    { value: "INFO", label: "Info" },
+    { value: "WARNING", label: "Warning" },
+    { value: "CRITICAL", label: "Critical" },
+  ];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Alert management</h1>
+    <Container maxWidth="xl" sx={{ py: 2 }}>
+      <Stack spacing={2}>
+        <Typography variant="h4" fontWeight={700}>
+          Alert management
+        </Typography>
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm">Severity:</label>
-        <select
-          value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
-          className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 bg-background text-foreground"
-        >
-          <option value="">All</option>
-          <option value="INFO">Info</option>
-          <option value="WARNING">Warning</option>
-          <option value="CRITICAL">Critical</option>
-        </select>
-      </div>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel id="severity-label">Severity</InputLabel>
+          <Select
+            labelId="severity-label"
+            value={severity}
+            label="Severity"
+            onChange={(e) => setSeverity(e.target.value)}
+          >
+            {severityOptions.map((opt) => (
+              <MenuItem key={opt.value || "all"} value={opt.value}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800">
-                <th className="p-3">Device</th>
-                <th className="p-3">Severity</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Message</th>
-                <th className="p-3">Created</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: "action.hover" }}>
+                <TableCell>Device</TableCell>
+                <TableCell>Severity</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Message</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {alerts.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-4 text-gray-500">
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
                     {error ? "Error loading alerts." : "No active alerts."}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
               {alerts.map((a) => (
-                <tr key={a.id} className="border-t border-gray-200 dark:border-gray-700">
-                  <td className="p-3 font-mono">{a.device_code ?? "—"}</td>
-                  <td className="p-3">
-                    <span
-                      className={
-                        a.severity === "CRITICAL"
-                          ? "text-red-600 font-medium"
-                          : a.severity === "WARNING"
-                          ? "text-amber-600 font-medium"
-                          : ""
-                      }
-                    >
-                      {a.severity}
-                    </span>
-                  </td>
-                  <td className="p-3">{a.alert_type}</td>
-                  <td className="p-3 max-w-xs truncate" title={a.message}>
+                <TableRow key={a.id} hover>
+                  <TableCell sx={{ fontFamily: "monospace" }}>{a.device_code ?? "—"}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={a.severity}
+                      size="small"
+                      color={a.severity === "CRITICAL" ? "error" : a.severity === "WARNING" ? "warning" : "default"}
+                    />
+                  </TableCell>
+                  <TableCell>{a.alert_type}</TableCell>
+                  <TableCell sx={{ maxWidth: 280 }} noWrap title={a.message}>
                     {a.message}
-                  </td>
-                  <td className="p-3 text-sm">
+                  </TableCell>
+                  <TableCell sx={{ fontSize: "0.875rem" }}>
                     {a.created_at ? new Date(a.created_at).toLocaleString() : "—"}
-                  </td>
-                  <td className="p-3">
-                    <button
-                      type="button"
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="outlined"
                       onClick={() => acknowledge(a.id)}
-                      className="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
                       Acknowledge
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Stack>
+    </Container>
   );
 }

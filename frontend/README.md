@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is the Smart Parking frontend (Next.js). Run from project root with `start.bat` or `npm run dev` here. Reports: CSV download is implemented; Excel/PDF are not (see project root README).
 
 ## Getting Started
 
