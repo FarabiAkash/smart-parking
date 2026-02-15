@@ -29,7 +29,7 @@ echo   Node: OK
 
 where npm >nul 2>&1
 if errorlevel 1 (
-  echo ERROR: npm not found. Install Node.js (includes npm).
+  echo ERROR: npm not found. Install Node.js - it includes npm.
   pause
   exit /b 1
 )
@@ -90,11 +90,11 @@ if not exist package.json (
 )
 
 if not exist node_modules (
-  echo   Installing dependencies (first run)...
-  npm install
+  echo   Installing dependencies - first run...
+  call npm install
 ) else (
   echo   node_modules present. Running npm install to sync...
-  npm install
+  call npm install
 )
 if errorlevel 1 (
   echo ERROR: npm install failed.
@@ -103,7 +103,8 @@ if errorlevel 1 (
 )
 
 echo   Starting Next.js dev server...
-start "Next.js Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
+timeout /t 2 /nobreak >nul
+start /normal "Next.js Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 cd ..
 echo.
 
